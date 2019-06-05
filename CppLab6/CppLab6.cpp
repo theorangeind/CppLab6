@@ -16,6 +16,35 @@ struct Client
 		nextMonthsPaid = monthsPaidTotal - 1;
 	}
 
+	void writeToFile(const char* path)	
+	{
+		ofstream stream(path, ios::binary);
+		int nameLength = name.length() + 1;
+		
+		stream.write((char*)& nameLength, sizeof(int));
+		stream.write((char*)name.c_str(), nameLength);
+		stream.write((char*)& monthCost, sizeof(float));
+		stream.write((char*)& monthsPaidTotal, sizeof(int));
+		stream.write((char*)& nextMonthsPaid, sizeof(int));
+		
+		stream.close();
+	}
+
+	void readFromFile(const char* path)
+	{
+		ifstream stream(path, ios::binary);
+		int nameLength;
+		stream.read((char*)& nameLength, sizeof(int));
+		char* buffer = new char[nameLength];
+		stream.read(buffer, nameLength);
+		name = buffer;
+		delete[]buffer;
+		stream.read((char*)& monthCost, sizeof(float));
+		stream.read((char*)& monthsPaidTotal, sizeof(int));
+		stream.read((char*)& nextMonthsPaid, sizeof(int));
+		stream.close();
+	}
+
 	void printInfo()
 	{
 		cout << "Name: " << name;
@@ -25,22 +54,12 @@ struct Client
 	}
 };
 
-Client init()
-{
-	Client client;
-	client.name = "";
-	client.monthCost = 0;
-	client.monthsPaidTotal = 0;
-	client.calc();
-
-	return client;
-}
-
 int main()
 {
 	srand(time(0));
 
 	const char* PATH = "D:\\CppLab5.lab";
+	
 	Client client;
 
 	client.name = "Vasiliy Petrovich";
@@ -48,30 +67,26 @@ int main()
 	client.monthsPaidTotal = (rand() % 6) + 1;
 	client.calc();
 
+	cout << "Writing to file this info:\n\n";
+
 	client.printInfo();
 
-	ofstream out(PATH, ios::binary);
-	out.write((char*)&client, sizeof(client));
-	out.close();
-
+	client.writeToFile(PATH);
+	
 	Client fromFile;
 
-	ifstream inp(PATH, ios::binary);
-	inp.read((char*)& fromFile, sizeof(client));
-	inp.close();
-
+	fromFile.readFromFile(PATH);
+	
 	if (fromFile.nextMonthsPaid > 3)
 	{
 		fromFile.monthCost -= (fromFile.monthCost / 100) * 5;
 
-		ofstream out(PATH, ios::binary);
-		out.write((char*)&fromFile, sizeof(fromFile));
-		out.close();
+		fromFile.writeToFile(PATH);
 
-		ifstream inp(PATH, ios::binary);
-		inp.read((char*)& fromFile, sizeof(client));
-		inp.close();
+		fromFile.readFromFile(PATH);
 	}
+
+	cout << "\nInfo from file (if next months paid > 3, subtract 5% from cost):\n\n";
 
 	fromFile.printInfo();
 
